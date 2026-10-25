@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import fs from "fs";
 import http from "http";
 import os from "os";
@@ -9,6 +10,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DEMO_DIR = path.join(__dirname, "samples", "ai-made-tool");
 const PORT = Number(process.env.PORT) || 3780;
+const BIND_HOST = "127.0.0.1";
+const SESSION_TOKEN = crypto.randomBytes(24).toString("hex");
+const LOCAL_ORIGIN = `http://${BIND_HOST}:${PORT}`;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -18,11 +22,27 @@ const MIME = {
   ".json": "application/json; charset=utf-8",
 };
 
+function hostName(req) {
+  return String(req.headers.host || "").split(":")[0].toLowerCase();
+}
+
+function isLocalHost(req) {
+  const host = hostName(req);
+  return host === "127.0.0.1" || host === "localhost";
+}
+
+function isLocalOrigin(req) {
+  const origin = String(req.headers.origin || "");
+  if (!origin) return true;
+  return origin === LOCAL_ORIGIN || origin === `http://localhost:${PORT}`;
+}
+
 function send(res, status, body, headers = {}) {
   const payload = Buffer.from(body);
   res.writeHead(status, {
     "Content-Length": payload.length,
     "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
     ...headers,
   });
   res.end(payload);
@@ -64,16 +84,26 @@ function readBody(req) {
 
 const server = http.createServer(async (req, res) => {
   try {
-    const url = new URL(req.url, "http://127.0.0.1");
+    if (!isLocalHost(req) || !isLocalOrigin(req)) {
+      sendJson(res, 403, { ok: false, error: "このアプリは、このPCの画面からだけ使えます。" });
+      return;
+    }
+    const url = new URL(req.url, LOCAL_ORIGIN);
     if (req.method === "GET" && url.pathname === "/api/places") {
       sendJson(res, 200, {
         demoPath: DEMO_DIR,
         places: specialPlaces(),
+        token: SESSION_TOKEN,
+        bind: `${BIND_HOST}:${PORT}`,
         hostname: os.hostname(),
       });
       return;
     }
     if (req.method === "POST" && url.pathname === "/api/scan") {
+      if (req.headers["x-mimamori-token"] !== SESSION_TOKEN) {
+        sendJson(res, 403, { ok: false, error: "このPCで起動した画面から開き直してください。" });
+        return;
+      }
       const raw = await readBody(req);
       let payload = {};
       try {
@@ -98,6 +128,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, "127.0.0.1", () => {
-  console.log(`AIみまもり http://127.0.0.1:${PORT}`);
+server.listen(PORT, BIND_HOST, () => {
+  console.log(`AIみまもり ${LOCAL_ORIGIN}`);
+  console.log("このPCの中だけです。社内LANにもインターネットにも出ていません。");
+  console.log("止めるときは、この窓を閉じてください。");
 });

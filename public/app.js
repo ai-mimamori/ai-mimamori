@@ -3,6 +3,7 @@ const input = document.getElementById("path");
 const button = document.getElementById("scan-btn");
 const placesEl = document.getElementById("places");
 const resultEl = document.getElementById("result");
+let sessionToken = "";
 
 const SEVERITY = {
   critical: "今すぐ対応",
@@ -21,6 +22,7 @@ function escapeHtml(text) {
 async function loadPlaces() {
   const res = await fetch("/api/places");
   const data = await res.json();
+  sessionToken = data.token || "";
   const chips = [
     { label: "デモを検査する", path: data.demoPath, demo: true },
     ...data.places.map((p) => ({ label: p.label, path: p.path })),
@@ -56,7 +58,10 @@ async function runScan(payload) {
   try {
     const res = await fetch("/api/scan", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Mimamori-Token": sessionToken,
+      },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
