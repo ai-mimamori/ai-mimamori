@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIみまもり</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <p class="mark">AIみまもり</p>
+        <h1>セキュリティソフトが見逃す、<br />AIが作ったツールの危険を調べます</h1>
+        <p class="lede">
+          ウイルス対策やセキュリティSaaSは、普通のプログラムを止めません。
+          非エンジニアがAIに作らせたフォルダの中にある「合鍵の置き忘れ」や「確認しない実行」を、このPCの中だけで検査します。
+        </p>
+      </header>
+
+      <section class="panel" aria-labelledby="scan-title">
+        <h2 id="scan-title">調べたいフォルダ</h2>
+        <p class="hint">エクスプローラーでフォルダを右クリックし、「パスのコピー」した文字を貼り付けてください。</p>
+        <form id="scan-form">
+          <label class="sr-only" for="path">フォルダの場所</label>
+          <div class="row">
+            <input id="path" name="path" type="text" autocomplete="off" placeholder="C:\Users\...\AIが作ったツール" />
+            <button type="submit" id="scan-btn">検査する</button>
+          </div>
+        </form>
+        <div class="places" id="places"></div>
+        <p class="trust">ファイルは社外に送りません。このパソコンの中だけで読みます。</p>
+      </section>
+
+      <section id="result" class="result" hidden></section>
+    </div>
+    <footer>
+      検証していること：非エンジニアでも「危ない理由」と「今やること」が分かるか。検査はパターン照合で、ファイルは実行しません。
+    </footer>
+    <script src="/app.js"></script>
+  </body>
+</html>
